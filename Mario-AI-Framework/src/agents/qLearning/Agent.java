@@ -1,8 +1,8 @@
 package agents.qLearning;
 
-import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.Iterator;
 
 import engine.core.MarioAgent;
 import engine.core.MarioForwardModel;
@@ -11,33 +11,40 @@ import engine.helper.GameStatus;
 import engine.helper.MarioActions;
 
 public class Agent implements MarioAgent {
+  public static int instanceCount = 0;
+  public static float maxReward= 0f;
   int count = 0;
   int printOffset = 5;
+  float totalReward = 0;
 
-  private float epsilon;
-  private float gamma;
-  private float alpha;
-  HashMap<String, Float> qValues;
-  private double epsilonDecay;
+  QTable qTable;
+  private float epsilonDecay = 0.001f;
+  
+  boolean play = false;
+
+  public Agent(){
+    super();
+  }
+  public Agent(boolean play){
+    super();
+    this.play = play;
+  }
 
   @Override
   public void initialize(MarioForwardModel model, MarioTimer timer) {
-    this.epsilon =  0.5f;
-    this.gamma = 0.92f; 
-    this.alpha = 0.1f;
-    this.qValues = new HashMap<>();
-    this.epsilonDecay = 0.0001;
-    
-
-    this.log("Actions: " + MarioActions.numberOfActions());
-    this.log("obsGridHeight: " + model.obsGridHeight);
-    this.log("obsGridWidth: " + model.obsGridWidth);
-    this.log("NumLives: " + model.getNumLives());
-    this.printState(model);
-    // this.log("getMarioFloatVelocity: " + model.);
-    // this.log("getMarioFloatVelocity: " + model.);
-    // this.log("getMarioFloatVelocity: " + model.);
+    qTable = new QTable(0.5f - (this.epsilonDecay * Agent.instanceCount));
+    Agent.instanceCount++;
+    this.totalReward = 0f;
+    this.log("Game init " + Agent.instanceCount);
+    this.log("Game qValues size " + qTable.qValues.size());
+    // this.log("Actions: " + MarioActions.numberOfActions());
+    // this.log("obsGridHeight: " + model.obsGridHeight);
+    // this.log("obsGridWidth: " + model.obsGridWidth);
+    // this.log("NumLives: " + model.getNumLives());
+    // this.printState(model);
     MarioRandom.init();
+    // this.qTable.clearQTable();
+    this.qTable.readQTable();
   }
 
   void printStateArray(int[][] matrix) {
@@ -48,128 +55,141 @@ public class Agent implements MarioAgent {
 
   void printState(MarioForwardModel model) {
     this.log("" + this.count + "****************************************************************");
-    this.log("RemainingTime: " + model.getRemainingTime());
-    this.log("MarioMode: " + model.getMarioMode());
-    this.log("CompletionPercentage: " + model.getCompletionPercentage());
-    this.log("EnemiesFloatPos: " + Arrays.toString(model.getEnemiesFloatPos()));
-    this.log("LevelFloatDimensions: " + Arrays.toString(model.getLevelFloatDimensions()));
-    this.log("MarioCanJumpHigher: " + model.getMarioCanJumpHigher());
-    this.log("MarioCompleteObservation:");
-    printStateArray(model.getMarioCompleteObservation());
-    this.log("MarioEnemiesObservation: ");
-    printStateArray(model.getMarioEnemiesObservation());
-    this.log("MarioFloatPos: " + Arrays.toString(model.getMarioFloatPos()));
-    this.log("MarioFloatVelocity: " + Arrays.toString(model.getMarioFloatVelocity()));
-    this.log("MarioSceneObservation: ");
-    printStateArray(model.getMarioSceneObservation());
-    this.log("MarioScreenTilePos: " + Arrays.toString(model.getMarioScreenTilePos()));
-    this.log("ScreenCompleteObservation: " + Arrays.toString(model.getScreenCompleteObservation()));
-    this.log("ScreenEnemiesObservation: " + Arrays.toString(model.getScreenEnemiesObservation()));
-    this.log("ScreenSceneObservation: " + Arrays.toString(model.getScreenSceneObservation()));
-    this.log("isMarioOnGround: " + model.isMarioOnGround());
-    this.log("mayMarioJump: " + model.mayMarioJump());
-    this.log("NumLives: " + model.getNumLives());
-    this.log("hashCode: " + model.hashCode());
-    this.log("****************************************************************");
-  }
-
-  String getActionsHash(boolean[] action){
-    return  action[0] + "_" + action[1] + "_" + action[2] + "_" + action[3] + "_" + action[4];
+    // // this.log("RemainingTime: " + model.getRemainingTime());
+    // // this.log("MarioMode: " + model.getMarioMode());
+    // this.log("CompletionPercentage: " + model.getCompletionPercentage());
+    // this.log("EnemiesFloatPos: " + Arrays.toString(model.getEnemiesFloatPos()));
+    // this.log("LevelFloatDimensions: " +
+    // Arrays.toString(model.getLevelFloatDimensions()));
+    // this.log("MarioCanJumpHigher: " + model.getMarioCanJumpHigher());
+    // this.log("MarioCompleteObservation:");
+    // printStateArray(model.getMarioCompleteObservation());
+    // this.log("MarioEnemiesObservation: ");
+    // printStateArray(model.getMarioEnemiesObservation());
+    // this.log("MarioFloatPos: " + Arrays.toString(model.getMarioFloatPos()));
+    // this.log("MarioFloatVelocity: " +
+    // Arrays.toString(model.getMarioFloatVelocity()));
+    // this.log("MarioSceneObservation: ");
+    // printStateArray(model.getMarioSceneObservation());
+    // this.log("MarioScreenTilePos: " +
+    // Arrays.toString(model.getMarioScreenTilePos()));
+    // this.log("ScreenCompleteObservation: ");
+    // printStateArray(model.getScreenCompleteObservation());
+    // this.log("ScreenEnemiesObservation: ");
+    // printStateArray(model.getScreenEnemiesObservation());
+    // this.log("ScreenSceneObservation: ");
+    // printStateArray(model.getScreenSceneObservation());
+    // this.log("isMarioOnGround: " + model.isMarioOnGround());
+    // this.log("mayMarioJump: " + model.mayMarioJump());
+    // // this.log("NumLives: " + model.getNumLives()); // Always 0
+    // // this.log("hashCode: " + model.hashCode()); // Hash number
+    this.log("*****************************************************" + model.getGameStatus());
   }
 
   String getStateHash(MarioForwardModel model) {
-    return "" + model.getMarioFloatPos()[0] + "_" + model.getMarioFloatPos()[1];
-  }
+    // String marioFloatPos = "p_" + (int)model.getMarioFloatPos()[0] + "_" +
+    // (int)model.getMarioFloatPos()[1];
+    String marioStatus = "jh_" + (model.getMarioCanJumpHigher() ? "1" : "0");
+    // marioStatus += "_mg_" + (model.isMarioOnGround() ? "1" : "0") 
+    // marioStatus += "_mj_" + (model.mayMarioJump() ? "1" : "0");
+    String marioCompleteObs = "o";
+    int startPos = 8 - 6;
+    int endPos = 8 + 7;
+    int[][] completeObs = model.getMarioCompleteObservation();
+    startPos = (startPos < 0 ? 0 : startPos);
+    endPos = (endPos > completeObs.length - 1 ? completeObs.length - 1 : endPos);
+    int[][] completeObsSlice = Arrays.copyOfRange(completeObs, startPos, endPos);
+    int length = completeObsSlice.length;
+    for(int i = 0; i < length; i++) {
+      int subStartPos = 8 - 5;// marioScreenTile[0] - 3;
+      int subEndPos = 8 + 6;// marioScreenTile[0] + 3;
+      completeObsSlice[i] =  Arrays.copyOfRange(completeObsSlice[i], subStartPos, subEndPos);
+    }
 
-  boolean[] getMaxQValueMove(String state, ArrayList<boolean[]> posibleActions) {
-    float maxValue = 0f;
-    int maxIndex = 0;
-    String hash = "";
-    int index = 0;
-    // ArrayList<boolean[]> posibleActions = MarioRandom.posibleChoices;
-    //log(""+posibleActions.toString());
-    for(boolean[] action: posibleActions){
-      hash += state + "_" +getActionsHash(action);           
-      // log("hash " + hash);
-      if(qValues.containsKey(hash)) {
-        float value = qValues.get(hash);
-        if(value > maxValue) {
-          maxValue = value;
-          maxIndex = index;     
-        }
+    // Flaten
+    for (int[] val1 : completeObsSlice) {
+      for (int val2 : val1) {
+        marioCompleteObs += val2;
       }
-      hash = ""; //reset
-      index ++;
     }
 
-    if(maxValue == 0.0) {
-      return MarioRandom.getRandomActions();
-     }
-     boolean[] bestMove = posibleActions.get(maxIndex);
-     return bestMove;
+    return marioStatus + "_" + marioCompleteObs;
+    // return marioCompleteObs;
   }
 
-  private float getMaxQValue(String state, ArrayList<boolean[]> posibleActions) {
-    float maxValue = -1;
-    String hash = "";
-    // ArrayList<boolean[]> posibleActions = MarioRandom.posibleChoices;
-    for(boolean[] action: posibleActions) {
-      hash += state + "_" +getActionsHash(action);        
-      if(qValues.containsKey(hash)) {
-        float value = qValues.get(hash);   
-        if(value > maxValue) {
-          maxValue = value;
-        }
+  int zeroCount = 0;
+  private float calculateReward(MarioForwardModel model) {
+    float f = 0f;
+    float v = model.getMarioFloatVelocity()[0] * 2;
+
+    if((int)v <= 1){
+      if(zeroCount > 2) {
+        v = -15f;
       }
-      hash = ""; //reset
+      zeroCount++;
+    }else {
+      zeroCount = 0;
     }
-    if(maxValue == 0.0) {
-      return 0f;
+    if (model.getGameStatus() == GameStatus.LOSE) {
+      f = -15f;
     }
-    return maxValue;
+    if (model.getGameStatus() == GameStatus.TIME_OUT) {
+      f = -5f;
+    }
+    return 0f + v + f;
   }
 
-  private void updateQValues(String prevState, float reward, String nextState) {
-    float oldValue = this.qValues.containsKey(prevState) ? this.qValues.get(prevState): 0f;
-    
-    float newValue = oldValue + this.alpha*(reward + this.gamma * getMaxQValue(nextState, MarioRandom.posibleChoices) - oldValue);
-    this.qValues.put(prevState,newValue);
+  ArrayList<boolean[]> getPosibleChoices(MarioForwardModel model) {
+    ArrayList<boolean[]> result = new ArrayList<boolean[]>();
+    int length = MarioRandom.posibleChoices.size();
+    if(zeroCount < 2){
+      for (int i = 0; i < length; i++) {
+        if (i == 1 || i == 3) {
+          result.add(MarioRandom.posibleChoices.get(i));
+        }
+      } 
+    }
+    return result;
   }
 
   @Override
   public boolean[] getActions(MarioForwardModel model, MarioTimer timer) {
-    if (this.count % printOffset == 0 || model.getRemainingTime() < 500) {
-      this.printState(model);
-    }
+    // if (this.count % printOffset == 0 || model.getRemainingTime() < 500) {
+    //   this.printState(model);
+    // }
     this.count++;
 
     /* Q learning */
     boolean[] selectedMove;
+    String state = getStateHash(model);
+    // this.log("state: " + state);
     // TODO: get posibleActions[] validating actual state
-    if(MarioRandom.rnd.nextFloat() < this.epsilon) {
-      // Explore
-      // TODO: getRandomAction based in PosibleActions
-      selectedMove = MarioRandom.getRandomActions();
-    } else {
-      // Exploit (largest q value)
-      String state = getStateHash(model);
-      ArrayList<boolean[]> posibleActions = MarioRandom.posibleChoices;
-      selectedMove = getMaxQValueMove(state, posibleActions);
+    ArrayList<boolean[]> posibleActions = this.getPosibleChoices(model);
+    selectedMove = qTable.getAction(state, this.play);
+    if (this.play) {
+      return selectedMove;
     }
-
-    String prevStateHash = getStateHash(model);
     model.advance(selectedMove);
+    // if (this.count % printOffset == 0 || model.getRemainingTime() < 500) {
+    //   this.printState(model);
+    // }
+    float reward = calculateReward(model);
+    this.totalReward += reward;
     String nextStateHash = getStateHash(model);
-    if (this.count % printOffset == 0 || model.getRemainingTime() < 500) {
-      this.printState(model);
+    //this.log("reward" + reward);
+    qTable.updateQValues(state, selectedMove, reward, nextStateHash);
+    
+    if (this.totalReward > Agent.maxReward) {
+      Agent.maxReward = this.totalReward;
     }
 
-    float reward = 0f;
-    
-    updateQValues(prevStateHash, reward, nextStateHash);
-
-    if(model.getGameStatus() != GameStatus.RUNNING) {
-      // TODO: save qtable in static file
+    if (model.getGameStatus() != GameStatus.RUNNING) {
+      this.log("GameStatus " + model.getGameStatus());
+      this.log("epsilon " + this.qTable.epsilon);
+      this.log("totalReward" + this.totalReward);
+      this.log("maxReward" + Agent.maxReward);
+      // this.qTable.printQTable();
+      this.qTable.saveQTable();
     }
 
     return selectedMove;

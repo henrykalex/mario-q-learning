@@ -56,6 +56,10 @@ public class MarioRandom {
   }
 
   public static boolean[] getRandomActions() {
-    return choices.get(rnd.nextInt(choices.size()));
+    return getRandomActions(MarioRandom.choices);
+  }
+
+  public static boolean[] getRandomActions(ArrayList<boolean[]> _choices) {
+    return _choices.get(rnd.nextInt(_choices.size()));
   }
 }

@@ -5,6 +5,8 @@ import java.nio.file.Paths;
 import engine.core.MarioGame;
 import engine.core.MarioResult;
 
+import agents.qLearning.Agent;
+
 public class PlayLevel {
   public static void printResults(MarioResult result) {
     System.out.println("****************************************************************");
@@ -33,13 +35,15 @@ public class PlayLevel {
 
   public static void main(String[] args) {
     int gameCount = 0;
-    int maxGames = 1;
-    MarioGame game = new MarioGame();
-    // printResults(game.playGame(getLevel("levels/original/lvl-1.txt"), 200, 0));
-    // printResults(game.runGame(new agents.robinBaumgarten.Agent(),
-    // getLevel("levels/original/lvl-1.txt"), 20, 0, true));
+    int maxGames = 500;
+    MarioGame game  = new MarioGame();
+    float lastMaxReward = 0f;
     while (gameCount < maxGames) {
-      printResults(game.runGame(new agents.qLearning.Agent(), getLevel("levels/original/lvl-1.txt"), 20, 0, true));
+      // printResults(game.playGame(getLevel("levels/original/lv-1.txt"), 200, 0));
+      // printResults(game.runGame(new agents.robinBaumgarte.Agent(), getLevel("levels/original/lvl-1.txt"), 20, 0, true));
+      // printResults(game.runGame(new agents.human.Agent(), getLevel("levels/original/lvl-1.txt"), 20, 0, true));
+      printResults(game.runGame(new agents.qLearning.Agent(), getLevel("levels/original/lvl-1.txt"), 5, 0, gameCount != 0 && gameCount % 50 == 0 || gameCount == maxGames-1));
+      // printResults(game.runGame(new agents.qLearning.Agent(true), getLevel("levels/original/lvl-1.txt"), 20, 0, true));
       gameCount++;
     }
   }
